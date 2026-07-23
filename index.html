@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#d9a76a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="习惯打卡">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>习惯打卡</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #faf6ee;
+    --card: #fffcf5;
+    --text: #3d3229;
+    --text-secondary: #b09c86;
+    --accent: #d9a76a;
+    --accent-light: #fdf3e6;
+    --border: #ede4d6;
+    --radius: 14px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px 80px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  /* ── Hero illustration ── */
+  .hero-illustration {
+    text-align: center;
+    margin-bottom: 8px;
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: none;
+  }
+
+  .hero-illustration svg {
+    width: 180px;
+    height: 90px;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .hero-illustration .sun { fill: #f5d742; }
+  .hero-illustration .sun-glow {
+    fill: none; stroke: #f5d742; stroke-width: 2;
+    stroke-dasharray: 4 4; opacity: 0.35;
+  }
+  .hero-illustration .ray { fill: none; stroke: #f5d742; stroke-width: 3; stroke-linecap: round; }
+  .hero-illustration .mountain-bg { fill: #f3ede2; }
+  .hero-illustration .mountain { fill: #ede4d6; }
+  .hero-illustration .dot { fill: #d9a76a; opacity: 0.45; }
+  .hero-illustration .check-mark {
+    stroke: #d9a76a; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; fill: none;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .date-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .progress-ring {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 80px;
+    height: 80px;
+  }
+
+  .progress-ring svg { transform: rotate(-90deg); }
+  .progress-ring .bg-circle { fill: none; stroke: var(--border); stroke-width: 4; }
+  .progress-ring .fg-circle {
+    fill: none; stroke: var(--accent); stroke-width: 4;
+    stroke-linecap: round; transition: stroke-dashoffset 0.45s ease;
+  }
+  .progress-text {
+    position: absolute; font-size: 20px; font-weight: 600; color: var(--accent);
+  }
+  .progress-text span { font-size: 14px; font-weight: 400; color: var(--text-secondary); }
+
+  /* ── Habit list ── */
+  .habit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .habit-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
+  }
+
+  .habit-item:active { transform: scale(0.98); }
+  .habit-item.done { background: var(--accent-light); }
+  .habit-item.done .habit-name { text-decoration: line-through; color: var(--accent); }
+
+  .habit-check {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.25s ease;
+  }
+
+  .habit-item.done .habit-check { background: var(--accent); border-color: var(--accent); }
+  .habit-check svg { width: 14px; height: 14px; opacity: 0; transition: opacity 0.2s ease; }
+  .habit-item.done .habit-check svg { opacity: 1; }
+
+  .habit-name { flex: 1; font-size: 16px; font-weight: 450; transition: color 0.2s; }
+
+  .habit-delete {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border: none; background: transparent; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); opacity: 0;
+    transition: opacity 0.2s, background 0.2s, color 0.2s;
+  }
+
+  .habit-item:hover .habit-delete,
+  .habit-item.show-delete .habit-delete { opacity: 1; }
+  .habit-delete:hover { background: #fde8d0; color: #c07630; }
+
+  /* ── Add form ── */
+  .add-form {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .add-form input {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--card);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .add-form input::placeholder { color: var(--text-secondary); }
+  .add-form input:focus { border-color: var(--accent); }
+
+  .add-form button {
+    flex-shrink: 0;
+    width: 48px; height: 48px;
+    border: none; border-radius: var(--radius);
+    background: var(--accent);
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .add-form button:active { transform: scale(0.92); }
+  .add-form button:disabled { opacity: 0.4; pointer-events: none; }
+
+  /* ── Quote section ── */
+  .quote-section {
+    margin-top: 32px;
+    padding: 20px 16px;
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+
+  .quote-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    font-style: italic;
+    max-width: 360px;
+    margin: 0 auto 8px;
+    position: relative;
+  }
+
+  .quote-text::before {
+    content: "\201C";
+    font-size: 28px;
+    color: var(--accent);
+    opacity: 0.35;
+    position: absolute;
+    left: -8px;
+    top: -8px;
+    line-height: 1;
+  }
+
+  .quote-author {
+    font-size: 12px;
+    color: var(--border);
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center;
+    padding: 32px 20px 40px;
+    color: var(--text-secondary);
+  }
+
+  .empty-state svg {
+    width: 130px; height: 80px;
+    margin-bottom: 14px;
+  }
+
+  .empty-state p {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .empty-state .pot-body { fill: #ede4d6; }
+  .empty-state .pot-rim { fill: #e0d5c4; }
+  .empty-state .leaf { fill: #d9a76a; }
+  .empty-state .leaf-dark { fill: #c9b088; }
+  .empty-state .leaf-green { fill: #c9d4b8; }
+  .empty-state .star { fill: #f0d58c; }
+
+  /* ── Pop-in animation ── */
+  @keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    70% { transform: scale(1.08); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .habit-item.pop-in { animation: popIn 0.35s ease-out; }
+
+  /* ── PWA install banner ── */
+  .install-banner {
+    display: none;
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    max-width: 420px;
+    margin: 0 auto;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    padding: 14px 16px;
+    align-items: center;
+    gap: 12px;
+    z-index: 100;
+    animation: popIn 0.35s ease-out;
+  }
+
+  .install-banner.show { display: flex; }
+
+  .install-banner img {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .install-banner .install-text {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .install-banner .install-text strong {
+    display: block;
+    font-weight: 600;
+  }
+
+  .install-banner .install-close {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+  }
+
+  .install-banner .install-btn {
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="hero-illustration">
+    <svg viewBox="0 0 240 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line class="ray" x1="54" y1="18" x2="46" y2="6" />
+      <line class="ray" x1="76" y1="10" x2="76" y2="0" />
+      <line class="ray" x1="98" y1="18" x2="106" y2="6" />
+      <circle class="sun-glow" cx="76" cy="44" r="28" />
+      <circle class="sun" cx="76" cy="44" r="18" />
+      <path class="mountain-bg" d="M0 100 L50 50 L80 72 L120 36 L160 70 L200 42 L240 72 L240 120 L0 120 Z" />
+      <path class="mountain" d="M0 120 L40 70 L80 96 L130 52 L180 82 L240 58 L240 120 Z" />
+      <polyline class="check-mark" points="100,70 108,80 126,56" />
+      <polyline class="check-mark" points="170,72 176,80 190,60" />
+      <circle class="dot" cx="32" cy="88" r="3" />
+      <circle class="dot" cx="220" cy="76" r="2.5" />
+      <circle class="dot" cx="204" cy="92" r="2" />
+    </svg>
+  </div>
+
+  <header>
+    <div class="date-label" id="dateLabel"></div>
+    <h1>习惯打卡</h1>
+    <div class="progress-ring" id="progressRing">
+      <svg width="80" height="80" viewBox="0 0 80 80">
+        <circle class="bg-circle" cx="40" cy="40" r="34" />
+        <circle class="fg-circle" id="progressCircle" cx="40" cy="40" r="34"
+          stroke-dasharray="213.63" stroke-dashoffset="213.63" />
+      </svg>
+      <div class="progress-text" id="progressText">0<span>/0</span></div>
+    </div>
+  </header>
+
+  <div id="habitList" class="habit-list"></div>
+
+  <div class="add-form">
+    <input type="text" id="habitInput" placeholder="添加新习惯…" maxlength="30" autocomplete="off" />
+    <button id="addBtn" disabled aria-label="添加">+</button>
+  </div>
+
+  <div class="quote-section">
+    <div class="quote-text" id="quoteText"></div>
+    <div class="quote-author" id="quoteAuthor"></div>
+  </div>
+</div>
+
+<div class="install-banner" id="installBanner">
+  <img src="icon-192.png" alt="">
+  <div class="install-text">
+    <strong>习惯打卡</strong>
+    安装到桌面，随时打卡
+  </div>
+  <button class="install-btn" id="installBtn">安装</button>
+  <button class="install-close" id="installClose">&#10005;</button>
+</div>
+
+<script>
+  var QUOTES = [
+    { text: "千里之行，始于足下。", author: "老子" },
+    { text: "不积跬步，无以至千里；不积小流，无以成江海。", author: "荀子" },
+    { text: "滴水穿石，非一日之功。", author: "中国谚语" },
+    { text: "习惯是一种顽强而巨大的力量，它可以主宰人生。", author: "培根" },
+    { text: "我们重复做什么，就成了什么样的人。卓越不是一种行为，而是一种习惯。", author: "亚里士多德" },
+    { text: "成功不是终点，失败也非末日，最重要的是继续前行的勇气。", author: "丘吉尔" },
+    { text: "锲而不舍，金石可镂。", author: "荀子" },
+    { text: "播种一种行为，收获一种习惯；播种一种习惯，收获一种性格；播种一种性格，收获一种命运。", author: "萨克雷" },
+    { text: "世上无难事，只怕有心人。", author: "中国谚语" },
+    { text: "每一天都是一个新的开始。", author: "卡耐基" },
+    { text: "坚持就是胜利。", author: "中国谚语" },
+    { text: "宝剑锋从磨砺出，梅花香自苦寒来。", author: "《警世贤文》" },
+    { text: "少成若天性，习惯如自然。", author: "孔子" },
+    { text: "行动是治愈恐惧的良药。", author: "威廉·詹姆斯" },
+    { text: "勿以善小而不为。", author: "刘备" },
+    { text: "积土成山，风雨兴焉；积水成渊，蛟龙生焉。", author: "荀子" },
+    { text: "路漫漫其修远兮，吾将上下而求索。", author: "屈原" },
+    { text: "天行健，君子以自强不息。", author: "《周易》" },
+    { text: "有志者，事竟成。", author: "《后汉书》" },
+    { text: "不积跬步，无以至千里。", author: "荀子" },
+    { text: "生活就像骑自行车，要保持平衡就得不断前进。", author: "爱因斯坦" },
+    { text: "成功就是每天重复做简单的事。", author: "佚名" },
+    { text: "昨日种种，皆成今我。", author: "胡适" },
+    { text: "大鹏一日同风起，扶摇直上九万里。", author: "李白" },
+    { text: "博观而约取，厚积而薄发。", author: "苏轼" },
+    { text: "功崇惟志，业广惟勤。", author: "《尚书》" },
+    { text: "学如逆水行舟，不进则退。", author: "《增广贤文》" },
+    { text: "日日行，不怕千万里；常常做，不怕千万事。", author: "《格言联璧》" },
+    { text: "绳锯木断，水滴石穿。", author: "《鹤林玉露》" },
+    { text: "合抱之木，生于毫末；九层之台，起于累土。", author: "老子" },
+    { text: "知行合一。", author: "王阳明" },
+    { text: "人的一生就是进行尝试，尝试的越多，生活就越美好。", author: "爱默生" },
+    { text: "不怕慢，就怕站。", author: "中国谚语" },
+    { text: "日拱一卒，功不唐捐。", author: "《法华经》" },
+    { text: "自律即自由。", author: "康德" },
+    { text: "每一天都是重新出发的机会。", author: "佚名" },
+    { text: "水不积不厚，人不学不成。", author: "《颜氏家训》" },
+    { text: "勤能补拙是良训，一分辛苦一分才。", author: "华罗庚" },
+    { text: "精诚所至，金石为开。", author: "《后汉书》" },
+    { text: "时间是世界上一切成就的土壤。", author: "麦金西" },
+    { text: "业精于勤，荒于嬉；行成于思，毁于随。", author: "韩愈" },
+    { text: "凡事预则立，不预则废。", author: "《礼记》" },
+    { text: "进一寸有一寸的欢喜。", author: "胡适" },
+    { text: "人若有志，万事可为。", author: "斯迈尔斯" },
+    { text: "靡不有初，鲜克有终。", author: "《诗经》" },
+    { text: "莫等闲，白了少年头，空悲切。", author: "岳飞" },
+    { text: "长风破浪会有时，直挂云帆济沧海。", author: "李白" },
+    { text: "不急不躁，绵绵用力，久久为功。", author: "中国谚语" },
+    { text: "种一棵树最好的时间是十年前，其次是现在。", author: "佚名" },
+    { text: "好的习惯就像一个银行，你可以不断地从中提取利息。", author: "佚名" }
+  ];
+
+  var STORAGE_KEY = 'habit_data';
+
+  var state = { habits: [], checkins: {} };
+
+  function todayKey() {
+    var d = new Date();
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
+  function formatDate(dateStr) {
+    var d = new Date(dateStr + 'T00:00:00');
+    var weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日 星期' + weekdays[d.getDay()];
+  }
+
+  function dailyQuoteIndex() {
+    var d = new Date();
+    var seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    return seed % QUOTES.length;
+  }
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        state.habits = parsed.habits || [];
+        state.checkins = parsed.checkins || {};
+      }
+    } catch(e) {}
+  }
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function getTodayCheckins() {
+    return state.checkins[todayKey()] || [];
+  }
+
+  function isDone(habitId) {
+    return getTodayCheckins().indexOf(habitId) !== -1;
+  }
+
+  function toggleHabit(habitId) {
+    var key = todayKey();
+    var ids = state.checkins[key] || [];
+    var idx = ids.indexOf(habitId);
+    if (idx !== -1) {
+      ids = ids.slice(0, idx).concat(ids.slice(idx + 1));
+    } else {
+      ids = ids.concat([habitId]);
+    }
+    if (ids.length === 0) {
+      delete state.checkins[key];
+    } else {
+      state.checkins[key] = ids;
+    }
+    saveState();
+    render();
+  }
+
+  function deleteHabit(habitId) {
+    state.habits = state.habits.filter(function(h) { return h.id !== habitId; });
+    for (var key in state.checkins) {
+      if (state.checkins.hasOwnProperty(key)) {
+        state.checkins[key] = state.checkins[key].filter(function(id) { return id !== habitId; });
+        if (state.checkins[key].length === 0) delete state.checkins[key];
+      }
+    }
+    saveState();
+    render();
+  }
+
+  function addHabit(name) {
+    var trimmed = name.trim();
+    if (!trimmed) return;
+    for (var i = 0; i < state.habits.length; i++) {
+      if (state.habits[i].name === trimmed) return;
+    }
+    state.habits.push({ id: Date.now(), name: trimmed });
+    saveState();
+    render();
+    document.getElementById('habitInput').value = '';
+    document.getElementById('addBtn').disabled = true;
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function render() {
+    var list = document.getElementById('habitList');
+    var today = getTodayCheckins();
+    var total = state.habits.length;
+    var done = today.length;
+
+    document.getElementById('dateLabel').textContent = formatDate(todayKey());
+
+    var circumference = 2 * Math.PI * 34;
+    var offset = total === 0 ? circumference : circumference * (1 - done / total);
+    var circle = document.getElementById('progressCircle');
+    circle.style.strokeDashoffset = offset;
+    document.getElementById('progressText').innerHTML = done + '<span>/' + total + '</span>';
+
+    var qi = dailyQuoteIndex();
+    document.getElementById('quoteText').textContent = QUOTES[qi].text;
+    document.getElementById('quoteAuthor').textContent = '—— ' + QUOTES[qi].author;
+
+    if (total === 0) {
+      list.innerHTML =
+        '<div class="empty-state">' +
+          '<svg viewBox="0 0 130 80" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+            '<ellipse class="pot-body" cx="65" cy="72" rx="18" ry="6" />' +
+            '<rect class="pot-rim" x="47" y="66" width="36" height="6" rx="2" />' +
+            '<path class="leaf" d="M65 66 L50 40 Q55 30 65 40" />' +
+            '<path class="leaf-green" d="M65 66 L80 36 Q75 26 65 40" />' +
+            '<path class="leaf-dark" d="M65 66 L60 28 Q63 20 65 28" />' +
+            '<path class="leaf" d="M65 66 L72 24 Q68 18 65 28" />' +
+            '<circle class="star" cx="42" cy="30" r="3" />' +
+            '<circle class="star" cx="90" cy="22" r="2.5" />' +
+            '<circle class="star" cx="100" cy="44" r="2" />' +
+          '</svg>' +
+          '<p>还没有习惯<br>在下方添加一个吧</p>' +
+        '</div>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < state.habits.length; i++) {
+      var h = state.habits[i];
+      var checked = isDone(h.id);
+      html += '<div class="habit-item' + (checked ? ' done' : '') + '" data-id="' + h.id + '">' +
+        '<div class="habit-check">' +
+          '<svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+            '<polyline points="3 8.5 6.5 12 13 4" />' +
+          '</svg>' +
+        '</div>' +
+        '<span class="habit-name">' + escapeHtml(h.name) + '</span>' +
+        '<button class="habit-delete" aria-label="删除" data-action="delete">&#10005;</button>' +
+      '</div>';
+    }
+    list.innerHTML = html;
+
+    var items = list.querySelectorAll('.habit-item');
+    for (var i = 0; i < items.length; i++) {
+      (function(el) {
+        var id = Number(el.dataset.id);
+
+        el.addEventListener('click', function(e) {
+          if (e.target.closest('[data-action="delete"]')) return;
+          toggleHabit(id);
+        });
+
+        var timer = null;
+
+        function start() {
+          timer = setTimeout(function() {
+            el.classList.toggle('show-delete');
+          }, 400);
+        }
+
+        function end() {
+          if (timer) { clearTimeout(timer); timer = null; }
+        }
+
+        el.addEventListener('mousedown', start);
+        el.addEventListener('mouseup', end);
+        el.addEventListener('mouseleave', end);
+        el.addEventListener('touchstart', start, { passive: true });
+        el.addEventListener('touchend', end);
+        el.addEventListener('touchcancel', end);
+
+        el.querySelector('[data-action="delete"]').addEventListener('click', function(e) {
+          e.stopPropagation();
+          deleteHabit(id);
+        });
+      })(items[i]);
+    }
+  }
+
+  loadState();
+  render();
+  document.addEventListener('visibilitychange', saveState);
+
+  var input = document.getElementById('habitInput');
+  var addBtn = document.getElementById('addBtn');
+
+  input.addEventListener('input', function() {
+    addBtn.disabled = input.value.trim().length === 0;
+  });
+
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !addBtn.disabled) {
+      addHabit(input.value);
+    }
+  });
+
+  addBtn.addEventListener('click', function() { addHabit(input.value); });
+
+  if (window.matchMedia('(pointer: fine)').matches) {
+    input.focus();
+  }
+
+  // ── Service Worker ──
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+
+  // ── PWA Install Prompt ──
+  var deferredPrompt = null;
+  var installBanner = document.getElementById('installBanner');
+  var installBtn = document.getElementById('installBtn');
+  var installClose = document.getElementById('installClose');
+
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBanner.classList.add('show');
+  });
+
+  installBtn.addEventListener('click', function() {
+    installBanner.classList.remove('show');
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function() {
+        deferredPrompt = null;
+      });
+    }
+  });
+
+  installClose.addEventListener('click', function() {
+    installBanner.classList.remove('show');
+    deferredPrompt = null;
+  });
+</script>
+</body>
+</html>
