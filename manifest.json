@@ -1,0 +1,14 @@
+{
+  "name": "习惯打卡",
+  "short_name": "打卡",
+  "description": "每日习惯打卡跟踪",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf6ee",
+  "theme_color": "#d9a76a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
