@@ -1,6 +1,5 @@
-var CACHE_NAME = "habit-cache-v2";
+var CACHE_NAME = "habit-cache-v3";
 var URLS_TO_CACHE = [
-  "index.html",
   "manifest.json",
   "icon-192.png",
   "icon-512.png"
@@ -29,9 +28,12 @@ self.addEventListener("activate", function(e) {
 });
 
 self.addEventListener("fetch", function(e) {
+  // Network-first: always try server, fall back to cache
   e.respondWith(
-    caches.match(e.request).then(function(resp) {
-      return resp || fetch(e.request);
+    fetch(e.request).then(function(resp) {
+      return resp;
+    }).catch(function() {
+      return caches.match(e.request);
     })
   );
 });
