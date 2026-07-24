@@ -1,4 +1,4 @@
-var CACHE_NAME = "habit-cache-v1";
+var CACHE_NAME = "habit-cache-v2";
 var URLS_TO_CACHE = [
   "index.html",
   "manifest.json",
@@ -25,6 +25,7 @@ self.addEventListener("activate", function(e) {
       );
     })
   );
+  self.clients.claim();
 });
 
 self.addEventListener("fetch", function(e) {
